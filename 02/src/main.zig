@@ -57,6 +57,15 @@ const Outcome = enum(u8) {
         }
     }
 
+    fn from_response(ch: u8) !Outcome {
+        switch (ch) {
+            'X' => return .Loss,
+            'Y' => return .Draw,
+            'Z' => return .Win,
+            else => return error.InvalidOutcome,
+        }
+    }
+
     fn points(self: *const Outcome) u8 {
         return @enumToInt(self.*);
     }
@@ -83,4 +92,38 @@ pub fn main() !void {
     }
     std.debug.print("\n\n", .{});
     std.log.info("Total points from strategy guide: {}", .{total_points});
+
+    ////////////////////////////////////////
+    // Part 2
+    ////////////////////////////////////////
+
+    play_iter = std.mem.split(u8, input, "\n");
+    total_points = 0;
+    while (play_iter.next()) |play_response| {
+        if (play_response.len < 3) continue;
+
+        const play = try Play.from_play(play_response[0]);
+        const outcome = try Outcome.from_response(play_response[2]);
+
+        var shape: Play = undefined;
+        switch (outcome) {
+            .Win => switch (play) {
+                .Rock => shape = .Paper,
+                .Paper => shape = .Scissors,
+                .Scissors => shape = .Rock,
+            },
+            .Draw => switch (play) {
+                .Rock => shape = .Rock,
+                .Paper => shape = .Paper,
+                .Scissors => shape = .Scissors,
+            },
+            .Loss => switch (play) {
+                .Rock => shape = .Scissors,
+                .Paper => shape = .Rock,
+                .Scissors => shape = .Paper,
+            },
+        }
+        total_points += outcome.points() + shape.points();
+    }
+    std.log.info("Part 2 total points: {}", .{total_points});
 }
